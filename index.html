@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand-Controlled 3D Particle System</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+        }
+        canvas {
+            display: block;
+        }
+        #video {
+            display: none;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        h1 { margin: 0 0 10px 0; font-size: 20px; color: #00ffcc; }
+        p { margin: 5px 0; font-size: 14px; }
+        .highlight { color: #ff00ff; font-weight: bold; }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: #00ffcc;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+    </style>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- TensorFlow.js HandPose -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose@0.1.0/dist/handpose.min.js"></script>
+    
+    <script>
+        let videoElement, loadingDiv, handposeModel = null;
+        let frameCount = 0;
+        const DETECTION_INTERVAL = 3; // Run hand detection every 3 frames
+        
+        async function initHandTracking() {
+            videoElement = document.getElementById('video');
+            loadingDiv = document.getElementById('loading');
+            try {
+                loadingDiv.innerText = 'Loading AI model...';
+                
+                // Start camera first - reduced resolution for better performance
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 24, max: 30 } }
+                });
+                videoElement.srcObject = stream;
+                await videoElement.play();
+                
+                console.log('Camera started');
+                loadingDiv.innerText = 'Loading hand detection model...';
+                
+                // Load handpose model
+                handposeModel = await handpose.load();
+                console.log('Handpose model loaded');
+                
+                loadingDiv.style.opacity = '0';
+                detectHands();
+                
+            } catch (err) {
+                console.error('Init error:', err);
+                loadingDiv.innerText = 'Error: ' + err.message;
+                loadingDiv.style.color = '#ff6666';
+            }
+        }
+        
+        async function detectHands() {
+            if (!handposeModel) return;
+            
+            frameCount++;
+            
+            // Only run detection every N frames to reduce CPU load
+            if (frameCount % DETECTION_INTERVAL !== 0) {
+                requestAnimationFrame(detectHands);
+                return;
+            }
+            
+            try {
+                const predictions = await handposeModel.estimateHands(videoElement);
+                
+                if (predictions.length > 0) {
+                    const landmarks = predictions[0].landmarks;
+                    
+                    // Convert pixel coords to normalized (0-1) - updated for 320x240
+                    const norm = (pt) => ({ x: pt[0] / 320, y: pt[1] / 240 });
+                    
+                    const handX = norm(landmarks[9]).x - 0.5;
+                    const handY = norm(landmarks[9]).y - 0.5;
+                    window.targetRotation.y = handX * Math.PI * 2;
+                    window.targetRotation.x = handY * Math.PI * 2;
+                    
+                    const dxScale = landmarks[0][0] - landmarks[12][0];
+                    const dyScale = landmarks[0][1] - landmarks[12][1];
+                    const handSpread = Math.sqrt(dxScale * dxScale + dyScale * dyScale) / 320;
+                    window.targetScale = Math.max(0.5, handSpread * 5);
+                    
+                    if (window.targetColor) {
+                        window.targetColor.setHSL(norm(landmarks[8]).x, 1.0, 0.6);
+                    }
+                    
+                    // Pinch detection
+                    const px = (landmarks[4][0] - landmarks[8][0]) / 320;
+                    const py = (landmarks[4][1] - landmarks[8][1]) / 240;
+                    const pinchDist = Math.sqrt(px * px + py * py);
+                    
+                    if (pinchDist < 0.05 && !window.isPinched) {
+                        window.isPinched = true;
+                        window.currentShapeIndex = (window.currentShapeIndex + 1) % window.shapes.length;
+                        if (window.updateTargetPositions) {
+                            window.updateTargetPositions(window.shapes[window.currentShapeIndex]);
+                        }
+                    } else if (pinchDist > 0.07) {
+                        window.isPinched = false;
+                    }
+                } else {
+                    window.targetRotation.x *= 0.95;
+                    window.targetRotation.y *= 0.95;
+                    window.targetScale += (1.0 - window.targetScale) * 0.05;
+                }
+            } catch (e) {
+                console.error('Detection error:', e);
+            }
+            
+            requestAnimationFrame(detectHands);
+        }
+        
+        // Start after DOM loads
+        document.addEventListener('DOMContentLoaded', initHandTracking);
+    </script>
+</head>
+<body>
+
+    <div id="ui">
+        <h1>Hand Tracking Particles</h1>
+        <p>✋ <span class="highlight">Open/Close Hand:</span> Expand/Shrink particles</p>
+        <p>🤏 <span class="highlight">Pinch (Thumb+Index):</span> Switch shape template</p>
+        <p>↔️ <span class="highlight">Move Left/Right:</span> Change colors</p>
+        <p>🔄 <span class="highlight">Move Hand:</span> Rotate 3D system</p>
+        <p style="margin-top: 15px; color:#aaa;">Current Shape: <span id="shape-name" style="color:#fff; font-weight:bold;">Sphere</span></p>
+    </div>
+
+    <div id="loading">Loading AI Hand Tracking & Camera...</div>
+
+    <video id="video" autoplay playsinline></video>
+
+    <script>
+        // --- HAND TRACKING STATE VARIABLES ---
+        window.targetRotation = { x: 0, y: 0 };
+        window.targetScale = 1;
+        window.targetColor = null;
+        window.isPinched = false;
+        window.shapes = ['Sphere', 'Heart', 'Flower', 'Saturn', 'Fireworks'];
+        window.currentShapeIndex = 0;
+        
+        let particleSystem = null;
+        let targetPositions = null;
+        let currentPositions = null;
+        const particleCount = 3000; // Reduced from 6000 for better performance
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 10;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Initialize position arrays
+        targetPositions = new Float32Array(particleCount * 3);
+        currentPositions = new Float32Array(particleCount * 3);
+
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        // Create glowing particle texture
+        function createParticleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(32, 32, 32, 0, Math.PI * 2);
+            ctx.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const material = new THREE.PointsMaterial({
+            size: 0.15,
+            map: createParticleTexture(),
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            color: new THREE.Color(0x00ffcc)
+        });
+
+        window.targetColor = new THREE.Color(0x00ffcc);
+
+        particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // --- SHAPE TEMPLATES ---
+        function getShapePosition(type) {
+            let x, y, z;
+            switch(type) {
+                case 'Heart':
+                    const t = Math.PI * 2 * Math.random();
+                    x = 16 * Math.pow(Math.sin(t), 3) * 0.15;
+                    y = (13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t)) * 0.15;
+                    z = (Math.random() - 0.5) * 1;
+                    break;
+                case 'Flower':
+                    const theta = Math.random() * Math.PI * 2;
+                    const petals = 5;
+                    const rBase = Math.cos(petals * theta);
+                    const r = rBase * 3 + Math.random() * 0.5;
+                    x = r * Math.cos(theta);
+                    y = r * Math.sin(theta);
+                    z = (Math.random() - 0.5) * 0.5;
+                    break;
+                case 'Saturn':
+                    if (Math.random() > 0.3) {
+                        const u = Math.random(), v = Math.random();
+                        const th = u * 2.0 * Math.PI, ph = Math.acos(2.0 * v - 1.0);
+                        const radius = 1.5 + Math.random() * 0.2;
+                        x = radius * Math.sin(ph) * Math.cos(th);
+                        y = radius * Math.sin(ph) * Math.sin(th);
+                        z = radius * Math.cos(ph);
+                    } else {
+                        const ringTheta = Math.random() * Math.PI * 2;
+                        const ringR = 2.5 + Math.random() * 1.5;
+                        x = ringR * Math.cos(ringTheta);
+                        y = (Math.random() - 0.5) * 0.2;
+                        z = ringR * Math.sin(ringTheta);
+                    }
+                    break;
+                case 'Fireworks':
+                    const u2 = Math.random(), v2 = Math.random();
+                    const th2 = u2 * 2.0 * Math.PI, ph2 = Math.acos(2.0 * v2 - 1.0);
+                    const shellRadius = 4 + (Math.random() * 0.2); 
+                    x = shellRadius * Math.sin(ph2) * Math.cos(th2);
+                    y = shellRadius * Math.sin(ph2) * Math.sin(th2);
+                    z = shellRadius * Math.cos(ph2);
+                    break;
+                case 'Sphere':
+                default:
+                    const u3 = Math.random(), v3 = Math.random();
+                    const th3 = u3 * 2.0 * Math.PI, ph3 = Math.acos(2.0 * v3 - 1.0);
+                    const rad3 = Math.cbrt(Math.random()) * 3;
+                    x = rad3 * Math.sin(ph3) * Math.cos(th3);
+                    y = rad3 * Math.sin(ph3) * Math.sin(th3);
+                    z = rad3 * Math.cos(ph3);
+                    break;
+            }
+            return { x, y, z };
+        }
+
+        function updateTargetPositions(shapeName) {
+            for (let i = 0; i < particleCount; i++) {
+                const pos = getShapePosition(shapeName);
+                targetPositions[i * 3] = pos.x;
+                targetPositions[i * 3 + 1] = pos.y;
+                targetPositions[i * 3 + 2] = pos.z;
+                
+                if (shapeName === 'Sphere' && currentPositions[0] === 0) {
+                    currentPositions[i * 3] = pos.x;
+                    currentPositions[i * 3 + 1] = pos.y;
+                    currentPositions[i * 3 + 2] = pos.z;
+                }
+            }
+            document.getElementById('shape-name').innerText = shapeName;
+        }
+
+        // Expose function to window for hand tracking access
+        window.updateTargetPositions = updateTargetPositions;
+        
+        // Initialize default shape
+        updateTargetPositions(window.shapes[window.currentShapeIndex]);
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 1. Smoothly morph particle positions
+            const posAttr = particleSystem.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount * 3; i++) {
+                // LERP towards target positions
+                currentPositions[i] += (targetPositions[i] - currentPositions[i]) * 0.08;
+                posAttr[i] = currentPositions[i];
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+
+            // 2. Smoothly interpolate rotation, scale, and color
+            particleSystem.rotation.x += (targetRotation.x - particleSystem.rotation.x) * 0.1;
+            particleSystem.rotation.y += (targetRotation.y - particleSystem.rotation.y) * 0.1;
+            
+            const currentScale = particleSystem.scale.x;
+            const newScale = currentScale + (targetScale - currentScale) * 0.1;
+            particleSystem.scale.set(newScale, newScale, newScale);
+
+            particleSystem.material.color.lerp(targetColor, 0.1);
+
+            // Add an inherent gentle slow rotation
+            particleSystem.rotation.z += 0.002;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
