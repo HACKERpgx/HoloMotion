@@ -170,12 +170,14 @@
         window.targetScale = 1;
         window.targetColor = null;
         window.isPinched = false;
-        window.shapes = ['Sphere', 'Heart', 'Flower', 'Saturn', 'Fireworks'];
+        window.shapes = ['Sphere', 'Heart', 'Flower', 'Saturn', 'Fireworks', 'Earth'];
         window.currentShapeIndex = 0;
         
         let particleSystem = null;
         let targetPositions = null;
         let currentPositions = null;
+        let targetColors = null;
+        let currentColors = null;
         const particleCount = 3000; // Reduced from 6000 for better performance
 
         // --- THREE.JS SETUP ---
@@ -190,10 +192,14 @@
         // Initialize position arrays
         targetPositions = new Float32Array(particleCount * 3);
         currentPositions = new Float32Array(particleCount * 3);
+        targetColors = new Float32Array(particleCount * 3);
+        currentColors = new Float32Array(particleCount * 3);
 
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         // Create glowing particle texture
         function createParticleTexture() {
@@ -217,7 +223,8 @@
             transparent: true,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
-            color: new THREE.Color(0x00ffcc)
+            vertexColors: true,
+            color: new THREE.Color(0xffffff)
         });
 
         window.targetColor = new THREE.Color(0x00ffcc);
@@ -226,9 +233,20 @@
         scene.add(particleSystem);
 
         // --- SHAPE TEMPLATES ---
-        function getShapePosition(type) {
-            let x, y, z;
+        function getShapePosition(type, i) {
+            let x, y, z, colorType = null;
             switch(type) {
+                case 'Earth':
+                    const u = Math.random(), v = Math.random();
+                    const th = u * 2.0 * Math.PI, ph = Math.acos(2.0 * v - 1.0);
+                    const rad = Math.cbrt(Math.random()) * 2.5;
+                    x = rad * Math.sin(ph) * Math.cos(th);
+                    y = rad * Math.sin(ph) * Math.sin(th);
+                    z = rad * Math.cos(ph);
+                    // Use Perlin-like noise pattern to determine land vs water
+                    const noise = Math.sin(th * 3) * Math.cos(ph * 2) + Math.sin(th * 7) * 0.3;
+                    colorType = noise > 0 ? 'green' : 'blue';
+                    break;
                 case 'Heart':
                     const t = Math.PI * 2 * Math.random();
                     x = 16 * Math.pow(Math.sin(t), 3) * 0.15;
@@ -278,20 +296,39 @@
                     z = rad3 * Math.cos(ph3);
                     break;
             }
-            return { x, y, z };
+            return { x, y, z, colorType };
         }
 
+        const colorBlue = new THREE.Color(0x0066cc);
+        const colorGreen = new THREE.Color(0x228822);
+
         function updateTargetPositions(shapeName) {
+            const isEarth = shapeName === 'Earth';
             for (let i = 0; i < particleCount; i++) {
-                const pos = getShapePosition(shapeName);
+                const pos = getShapePosition(shapeName, i);
                 targetPositions[i * 3] = pos.x;
                 targetPositions[i * 3 + 1] = pos.y;
                 targetPositions[i * 3 + 2] = pos.z;
+                
+                // Set target colors
+                if (isEarth && pos.colorType) {
+                    const color = pos.colorType === 'green' ? colorGreen : colorBlue;
+                    targetColors[i * 3] = color.r;
+                    targetColors[i * 3 + 1] = color.g;
+                    targetColors[i * 3 + 2] = color.b;
+                } else {
+                    targetColors[i * 3] = 0;
+                    targetColors[i * 3 + 1] = 1;
+                    targetColors[i * 3 + 2] = 0.8;
+                }
                 
                 if (shapeName === 'Sphere' && currentPositions[0] === 0) {
                     currentPositions[i * 3] = pos.x;
                     currentPositions[i * 3 + 1] = pos.y;
                     currentPositions[i * 3 + 2] = pos.z;
+                    currentColors[i * 3] = targetColors[i * 3];
+                    currentColors[i * 3 + 1] = targetColors[i * 3 + 1];
+                    currentColors[i * 3 + 2] = targetColors[i * 3 + 2];
                 }
             }
             document.getElementById('shape-name').innerText = shapeName;
@@ -307,14 +344,19 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Smoothly morph particle positions
+            // 1. Smoothly morph particle positions and colors
             const posAttr = particleSystem.geometry.attributes.position.array;
+            const colAttr = particleSystem.geometry.attributes.color.array;
             for (let i = 0; i < particleCount * 3; i++) {
                 // LERP towards target positions
                 currentPositions[i] += (targetPositions[i] - currentPositions[i]) * 0.08;
                 posAttr[i] = currentPositions[i];
+                // LERP towards target colors
+                currentColors[i] += (targetColors[i] - currentColors[i]) * 0.08;
+                colAttr[i] = currentColors[i];
             }
             particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.geometry.attributes.color.needsUpdate = true;
 
             // 2. Smoothly interpolate rotation, scale, and color
             particleSystem.rotation.x += (targetRotation.x - particleSystem.rotation.x) * 0.1;
@@ -323,8 +365,6 @@
             const currentScale = particleSystem.scale.x;
             const newScale = currentScale + (targetScale - currentScale) * 0.1;
             particleSystem.scale.set(newScale, newScale, newScale);
-
-            particleSystem.material.color.lerp(targetColor, 0.1);
 
             // Add an inherent gentle slow rotation
             particleSystem.rotation.z += 0.002;
