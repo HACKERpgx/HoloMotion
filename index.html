@@ -310,13 +310,10 @@
             <div>HAND TRACKING: <span id="tracking-status">ACTIVE</span></div>
         </div>
         
-        <!-- Scrolling Data Text -->
-        <div class="hud-data scrolling" style="bottom: 20px; left: 20px;">
-            <div>ARC REACTOR ONLINE</div>
-            <div>REPULSOR SYSTEMS ARMED</div>
-            <div>NEURAL INTERFACE ACTIVE</div>
-            <div>PARTICLE MATRIX STABLE</div>
-            <div>STARK PROTOCOLS ENGAGED</div>
+        <!-- Dynamic Clock Display -->
+        <div class="hud-data" style="bottom: 20px; left: 20px;" id="clock-display">
+            <div id="clock-time">00:00:00</div>
+            <div id="clock-date">JANUARY 1, 2026</div>
         </div>
         
         <!-- Additional Targeting Elements -->
@@ -633,16 +630,46 @@
 
         // --- AUDIO SYSTEM ---
         window.playMechanicalWhir = function() {
-            console.log('🔧 Mechanical Whir Sound Triggered');
+            console.log('?? Mechanical Whir Sound Triggered');
             // Placeholder for mechanical whir sound when hand opens
             // In production, you would load and play an actual audio file here
         };
         
         window.playRepulsorSound = function() {
-            console.log('⚡ Repulsor Blast Sound Triggered');
+            console.log('?? Repulsor Blast Sound Triggered');
             // Placeholder for repulsor blast sound when hand pinches
             // In production, you would load and play an actual audio file here
         };
+        
+        // --- DYNAMIC CLOCK SYSTEM ---
+        function updateClock() {
+            const now = new Date();
+            
+            // Format time as HH:MM:SS
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            
+            // Format date as MONTH DAY, YEAR
+            const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                          'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+            const monthName = months[now.getMonth()];
+            const day = now.getDate();
+            const year = now.getFullYear();
+            const dateString = `${monthName} ${day}, ${year}`;
+            
+            // Update DOM elements
+            const timeElement = document.getElementById('clock-time');
+            const dateElement = document.getElementById('clock-date');
+            
+            if (timeElement) timeElement.textContent = timeString;
+            if (dateElement) dateElement.textContent = dateString;
+        }
+        
+        // Initialize clock and update every second
+        updateClock();
+        setInterval(updateClock, 1000);
         
         // Update HUD data periodically
         setInterval(() => {
