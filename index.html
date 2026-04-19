@@ -5,12 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hand-Controlled 3D Particle System</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
         body {
             margin: 0;
             overflow: hidden;
             background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: white;
+            font-family: 'Orbitron', monospace;
+            color: #00E5FF;
         }
         canvas {
             display: block;
@@ -18,28 +20,135 @@
         #video {
             display: none;
         }
+        
+        /* Stark Tech HUD Styling */
         #ui {
             position: absolute;
             top: 20px;
             left: 20px;
             pointer-events: none;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 20, 40, 0.8);
             padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            border: 2px solid #00E5FF;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.1);
+            font-weight: 700;
         }
-        h1 { margin: 0 0 10px 0; font-size: 20px; color: #00ffcc; }
-        p { margin: 5px 0; font-size: 14px; }
-        .highlight { color: #ff00ff; font-weight: bold; }
+        
+        h1 { 
+            margin: 0 0 15px 0; 
+            font-size: 24px; 
+            color: #00E5FF; 
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+            letter-spacing: 2px;
+        }
+        
+        p { 
+            margin: 8px 0; 
+            font-size: 12px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .highlight { 
+            color: #FFD700; 
+            font-weight: 900;
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.8);
+        }
+        
         #loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             font-size: 24px;
-            color: #00ffcc;
+            color: #00E5FF;
+            font-weight: 900;
             pointer-events: none;
             transition: opacity 0.5s;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.8);
+        }
+        
+        /* HUD Overlay Elements */
+        #hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .targeting-reticle {
+            position: absolute;
+            border: 2px solid #00E5FF;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+        }
+        
+        .reticle-center {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #00E5FF;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+        }
+        
+        .hud-data {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #00E5FF;
+            text-shadow: 0 0 5px rgba(0, 229, 255, 0.8);
+        }
+        
+        .hud-data.scrolling {
+            animation: scroll-data 10s linear infinite;
+        }
+        
+        @keyframes scroll-data {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100px); }
+        }
+        
+        .corner-hud {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #00E5FF;
+            opacity: 0.8;
+        }
+        
+        .corner-hud.top-left {
+            top: 10px;
+            left: 10px;
+            border-right: none;
+            border-bottom: none;
+        }
+        
+        .corner-hud.top-right {
+            top: 10px;
+            right: 10px;
+            border-left: none;
+            border-bottom: none;
+        }
+        
+        .corner-hud.bottom-left {
+            bottom: 10px;
+            left: 10px;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .corner-hud.bottom-right {
+            bottom: 10px;
+            right: 10px;
+            border-left: none;
+            border-top: none;
         }
     </style>
     
@@ -102,6 +211,11 @@
                 if (predictions.length > 0) {
                     const landmarks = predictions[0].landmarks;
                     
+                    // Update repulsor beams
+                    if (window.updateRepulsorBeams) {
+                        window.updateRepulsorBeams(landmarks);
+                    }
+                    
                     // Convert pixel coords to normalized (0-1) - updated for 320x240
                     const norm = (pt) => ({ x: pt[0] / 320, y: pt[1] / 240 });
                     
@@ -116,7 +230,19 @@
                     window.targetScale = Math.max(0.5, handSpread * 5);
                     
                     if (window.targetColor) {
-                        window.targetColor.setHSL(norm(landmarks[8]).x, 1.0, 0.6);
+                        if (window.isPinching) {
+                            // Transition to Hot Rod Red or Gold when pinching
+                            const goldChance = Math.random();
+                            window.targetColor.lerp(window.pinchColor, 0.1);
+                            if (goldChance > 0.5) {
+                                window.pinchColor.setHex(0xFFD700); // Gold
+                            } else {
+                                window.pinchColor.setHex(0xFF0000); // Hot Rod Red
+                            }
+                        } else {
+                            // Electric Blue when not pinching
+                            window.targetColor.lerp(window.normalColor, 0.1);
+                        }
                     }
                     
                     // Pinch detection
@@ -126,12 +252,16 @@
                     
                     if (pinchDist < 0.05 && !window.isPinched) {
                         window.isPinched = true;
+                        window.isPinching = true;
                         window.currentShapeIndex = (window.currentShapeIndex + 1) % window.shapes.length;
                         if (window.updateTargetPositions) {
                             window.updateTargetPositions(window.shapes[window.currentShapeIndex]);
                         }
+                        // Trigger repulsor blast sound
+                        if (window.playRepulsorSound) window.playRepulsorSound();
                     } else if (pinchDist > 0.07) {
                         window.isPinched = false;
+                        window.isPinching = false;
                     }
                 } else {
                     window.targetRotation.x *= 0.95;
@@ -152,12 +282,46 @@
 <body>
 
     <div id="ui">
-        <h1>Hand Tracking Particles</h1>
+        <h1>J-AI: Holographic HUD Core</h1>
         <p>✋ <span class="highlight">Open/Close Hand:</span> Expand/Shrink particles</p>
         <p>🤏 <span class="highlight">Pinch (Thumb+Index):</span> Switch shape template</p>
         <p>↔️ <span class="highlight">Move Left/Right:</span> Change colors</p>
         <p>🔄 <span class="highlight">Move Hand:</span> Rotate 3D system</p>
-        <p style="margin-top: 15px; color:#aaa;">Current Shape: <span id="shape-name" style="color:#fff; font-weight:bold;">Sphere</span></p>
+        <p style="margin-top: 15px; color:#00E5FF;">Current Shape: <span id="shape-name" style="color:#FFD700; font-weight:900;">SPHERE</span></p>
+    </div>
+    
+    <!-- Stark Tech HUD Overlay -->
+    <div id="hud-overlay">
+        <!-- Corner HUD Elements -->
+        <div class="corner-hud top-left"></div>
+        <div class="corner-hud top-right"></div>
+        <div class="corner-hud bottom-left"></div>
+        <div class="corner-hud bottom-right"></div>
+        
+        <!-- Center Targeting Reticle -->
+        <div class="targeting-reticle" style="width: 100px; height: 100px; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+            <div class="reticle-center" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+        </div>
+        
+        <!-- HUD Data Display -->
+        <div class="hud-data" style="top: 20px; right: 20px; text-align: right;">
+            <div>POWER LEVELS: <span id="power-level">100%</span></div>
+            <div>SYSTEM STATUS: <span id="system-status">ONLINE</span></div>
+            <div>HAND TRACKING: <span id="tracking-status">ACTIVE</span></div>
+        </div>
+        
+        <!-- Scrolling Data Text -->
+        <div class="hud-data scrolling" style="bottom: 20px; left: 20px;">
+            <div>ARC REACTOR ONLINE</div>
+            <div>REPULSOR SYSTEMS ARMED</div>
+            <div>NEURAL INTERFACE ACTIVE</div>
+            <div>PARTICLE MATRIX STABLE</div>
+            <div>STARK PROTOCOLS ENGAGED</div>
+        </div>
+        
+        <!-- Additional Targeting Elements -->
+        <div class="targeting-reticle" style="width: 60px; height: 60px; top: 25%; left: 75%; transform: translate(-50%, -50%); opacity: 0.5;"></div>
+        <div class="targeting-reticle" style="width: 40px; height: 40px; top: 75%; left: 25%; transform: translate(-50%, -50%); opacity: 0.3;"></div>
     </div>
 
     <div id="loading">Loading AI Hand Tracking & Camera...</div>
@@ -170,6 +334,7 @@
         window.targetScale = 1;
         window.targetColor = null;
         window.isPinched = false;
+        window.isPinching = false;
         window.shapes = ['Sphere', 'Heart', 'Flower', 'Saturn', 'Fireworks', 'Earth'];
         window.currentShapeIndex = 0;
         
@@ -179,6 +344,10 @@
         let targetColors = null;
         let currentColors = null;
         const particleCount = 3000; // Reduced from 6000 for better performance
+        
+        // Repulsor Beam system
+        let repulsorLines = [];
+        let repulsorGroup = null;
 
         // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
@@ -201,19 +370,60 @@
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // Create glowing particle texture
+        // Create Arc Reactor/Hexagon particle texture
         function createParticleTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 64; canvas.height = 64;
             const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            grad.addColorStop(0, 'rgba(255,255,255,1)');
-            grad.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Create hexagon shape
+            ctx.save();
+            ctx.translate(32, 32);
+            
+            // Outer glow
+            const glowGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
+            glowGrad.addColorStop(0, 'rgba(0, 229, 255, 0.8)');
+            glowGrad.addColorStop(0.5, 'rgba(0, 229, 255, 0.3)');
+            glowGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+            ctx.fillStyle = glowGrad;
             ctx.beginPath();
-            ctx.arc(32, 32, 32, 0, Math.PI * 2);
+            ctx.arc(0, 0, 30, 0, Math.PI * 2);
             ctx.fill();
+            
+            // Draw hexagon
+            ctx.strokeStyle = 'rgba(0, 229, 255, 1)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (Math.PI / 3) * i;
+                const x = Math.cos(angle) * 12;
+                const y = Math.sin(angle) * 12;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Inner circle (arc reactor core)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Inner glow
+            const innerGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 8);
+            innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            innerGrad.addColorStop(1, 'rgba(0, 229, 255, 0.4)');
+            ctx.fillStyle = innerGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+            
             return new THREE.CanvasTexture(canvas);
         }
 
@@ -227,10 +437,87 @@
             color: new THREE.Color(0xffffff)
         });
 
-        window.targetColor = new THREE.Color(0x00ffcc);
+        window.targetColor = new THREE.Color(0x00E5FF);
+        window.pinchColor = new THREE.Color(0xFF0000);
+        window.normalColor = new THREE.Color(0x00E5FF);
+        window.isPinching = false;
 
         particleSystem = new THREE.Points(geometry, material);
         scene.add(particleSystem);
+
+        // Initialize Repulsor Beam system
+        repulsorGroup = new THREE.Group();
+        scene.add(repulsorGroup);
+        
+        // Create repulsor lines between palm and fingertips
+        function createRepulsorBeams() {
+            // Clear existing lines
+            repulsorLines.forEach(line => repulsorGroup.remove(line));
+            repulsorLines = [];
+            
+            // Create lines from palm (landmark 9) to fingertips (4, 8, 12, 16, 20)
+            const palmIndex = 9;
+            const fingertipIndices = [4, 8, 12, 16, 20]; // thumb, index, middle, ring, pinky
+            
+            fingertipIndices.forEach(tipIndex => {
+                const lineGeometry = new THREE.BufferGeometry();
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: 0x00E5FF,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending
+                });
+                
+                const line = new THREE.Line(lineGeometry, lineMaterial);
+                repulsorGroup.add(line);
+                repulsorLines.push(line);
+            });
+        }
+        
+        createRepulsorBeams();
+        
+        // Update repulsor beam positions
+        window.updateRepulsorBeams = function(landmarks) {
+            if (!repulsorLines.length) return;
+            
+            const norm = (pt) => ({ x: pt[0] / 320, y: pt[1] / 240 });
+            const palm = norm(landmarks[9]);
+            const fingertipIndices = [4, 8, 12, 16, 20];
+            
+            repulsorLines.forEach((line, index) => {
+                const fingertip = norm(landmarks[fingertipIndices[index]]);
+                
+                // Convert normalized coords to 3D space
+                const palmPos = new THREE.Vector3(
+                    (palm.x - 0.5) * 10,
+                    -(palm.y - 0.5) * 10,
+                    0
+                );
+                
+                const tipPos = new THREE.Vector3(
+                    (fingertip.x - 0.5) * 10,
+                    -(fingertip.y - 0.5) * 10,
+                    0
+                );
+                
+                // Update line geometry
+                const positions = new Float32Array([
+                    palmPos.x, palmPos.y, palmPos.z,
+                    tipPos.x, tipPos.y, tipPos.z
+                ]);
+                
+                line.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                // Update color based on pinch state
+                if (window.isPinching) {
+                    line.material.color.setHex(0xFF0000);
+                    line.material.opacity = 1.0;
+                } else {
+                    line.material.color.setHex(0x00E5FF);
+                    line.material.opacity = 0.8;
+                }
+            });
+        };
 
         // --- SHAPE TEMPLATES ---
         function getShapePosition(type, i) {
@@ -317,9 +604,10 @@
                     targetColors[i * 3 + 1] = color.g;
                     targetColors[i * 3 + 2] = color.b;
                 } else {
+                    // Electric Blue default color
                     targetColors[i * 3] = 0;
-                    targetColors[i * 3 + 1] = 1;
-                    targetColors[i * 3 + 2] = 0.8;
+                    targetColors[i * 3 + 1] = 229/255;
+                    targetColors[i * 3 + 2] = 1;
                 }
                 
                 if (shapeName === 'Sphere' && currentPositions[0] === 0) {
@@ -331,7 +619,10 @@
                     currentColors[i * 3 + 2] = targetColors[i * 3 + 2];
                 }
             }
-            document.getElementById('shape-name').innerText = shapeName;
+            const shapeElement = document.getElementById('shape-name');
+            if (shapeElement) {
+                shapeElement.innerText = shapeName.toUpperCase();
+            }
         }
 
         // Expose function to window for hand tracking access
@@ -339,6 +630,43 @@
         
         // Initialize default shape
         updateTargetPositions(window.shapes[window.currentShapeIndex]);
+
+        // --- AUDIO SYSTEM ---
+        window.playMechanicalWhir = function() {
+            console.log('🔧 Mechanical Whir Sound Triggered');
+            // Placeholder for mechanical whir sound when hand opens
+            // In production, you would load and play an actual audio file here
+        };
+        
+        window.playRepulsorSound = function() {
+            console.log('⚡ Repulsor Blast Sound Triggered');
+            // Placeholder for repulsor blast sound when hand pinches
+            // In production, you would load and play an actual audio file here
+        };
+        
+        // Update HUD data periodically
+        setInterval(() => {
+            const powerLevel = document.getElementById('power-level');
+            const trackingStatus = document.getElementById('tracking-status');
+            
+            if (powerLevel) {
+                // Simulate power level fluctuations
+                const currentPower = 85 + Math.random() * 15;
+                powerLevel.textContent = currentPower.toFixed(1) + '%';
+                
+                // Change color based on power level
+                if (currentPower < 90) {
+                    powerLevel.style.color = '#FFD700';
+                } else {
+                    powerLevel.style.color = '#00E5FF';
+                }
+            }
+            
+            if (trackingStatus) {
+                trackingStatus.textContent = window.isPinching ? 'PINCHING' : 'ACTIVE';
+                trackingStatus.style.color = window.isPinching ? '#FF0000' : '#00E5FF';
+            }
+        }, 1000);
 
         // --- ANIMATION LOOP ---
         function animate() {
