@@ -10,3 +10,7 @@ Hand-controlled 3D particle system using Three.js and TensorFlow.js.
 
 ## Setup
 Just open `index.html` in a modern browser with webcam access.
+
+
+https://github.com/user-attachments/assets/9777985f-9136-422d-bd4e-b6cd6bcc3115
+
