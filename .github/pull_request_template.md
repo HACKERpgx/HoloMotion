@@ -1,3 +1,7 @@
+# Pull Request
+
+Thank you for contributing to HoloMotion! Please fill out the sections below to help us understand and review your changes.
+
 ## Description
 
 <!-- Briefly describe what this PR does and why it's needed -->
@@ -6,7 +10,7 @@
 
 - [ ] Added/Updated feature X
 - [ ] Fixed bug Y
-- [ ] Improved performance/Z
+- [ ] Improved performance Z
 
 ## Related Issue
 
@@ -14,8 +18,8 @@ Closes #XX
 
 ## How to Test
 
-1. Step 1...
-2. Step 2...
+- Step 1...
+- Step 2...
 
 ## Screenshots / Recordings
 
