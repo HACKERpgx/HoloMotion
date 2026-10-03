@@ -12,5 +12,4 @@ Hand-controlled 3D particle system using Three.js and TensorFlow.js.
 Just open `index.html` in a modern browser with webcam access.
 
 
-https://github.com/user-attachments/assets/9777985f-9136-422d-bd4e-b6cd6bcc3115
-
+<img width="1366" height="768" alt="HoloMotion" src="https://github.com/user-attachments/assets/d27b90a5-e6fb-4d74-9349-5212d05ffcda" />
