@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+<rect width="1600" height="1000" fill="#10141b"/>
+<style>text{font-family:Arial,sans-serif;fill:#e8edf2} .title{font-size:34px;font-weight:bold}.sub{font-size:18px;fill:#a7b2bf}.box{fill:#1b2530;stroke:#5bc0eb;stroke-width:3;rx:18}.pin{font-size:17px;fill:#ffe08a}.label{font-size:18px;font-weight:bold}.wire{stroke:#7ee787;stroke-width:4;fill:none}.power{stroke:#ffb86b;stroke-width:4;fill:none}.gnd{stroke:#9aa4b2;stroke-width:4;fill:none;stroke-dasharray:8 8}.note{font-size:16px;fill:#b8c4d0}</style>
+<text x="70" y="65" class="title">HoloMotion Gesture Controller — Prototype Wiring</text>
+<text x="70" y="98" class="sub">3.3 V logic • IMU + capacitive pinch • I²S line-level audio • USB-C power</text>
+<!-- blocks -->
+<rect x="80" y="200" width="330" height="420" class="box"/><text x="120" y="245" class="label">ESP32-S3 DevKit</text><text x="120" y="275" class="sub">controller / BLE / audio synth</text>
+<text x="120" y="335" class="pin">GPIO8  SDA</text><text x="120" y="375" class="pin">GPIO9  SCL</text><text x="120" y="415" class="pin">GPIO4  IMU INT1</text><text x="120" y="455" class="pin">GPIO5  THUMB touch</text><text x="120" y="495" class="pin">GPIO6  INDEX touch</text><text x="120" y="535" class="pin">GPIO7  PINCH LED</text><text x="120" y="575" class="pin">GPIO16 BCLK</text><text x="120" y="610" class="pin">GPIO17 LRCLK</text><text x="120" y="645" class="pin">GPIO18 DOUT</text>
+<rect x="640" y="180" width="300" height="220" class="box"/><text x="700" y="225" class="label">BMI270 IMU</text><text x="700" y="255" class="sub">6-axis accel + gyro</text><text x="700" y="310" class="pin">VDD / VDDIO → 3V3</text><text x="700" y="345" class="pin">SDA / SCL → I²C</text><text x="700" y="380" class="pin">INT1 → GPIO4</text>
+<rect x="640" y="510" width="300" height="250" class="box"/><text x="680" y="555" class="label">PCM5102A DAC</text><text x="680" y="585" class="sub">stereo line output</text><text x="680" y="635" class="pin">BCK → GPIO16</text><text x="680" y="670" class="pin">LRCK → GPIO17</text><text x="680" y="705" class="pin">DIN → GPIO18</text><text x="680" y="740" class="pin">L/R OUT → 3.5 mm jack</text>
+<rect x="1120" y="190" width="300" height="190" class="box"/><text x="1190" y="235" class="label">Pinch electrodes</text><text x="1190" y="265" class="sub">thumb + index copper pads</text><text x="1190" y="320" class="pin">THUMB → GPIO5 touch</text><text x="1190" y="355" class="pin">INDEX → GPIO6 touch</text>
+<rect x="1120" y="520" width="300" height="190" class="box"/><text x="1200" y="565" class="label">Power</text><text x="1200" y="595" class="sub">USB-C 5 V → DevKit</text><text x="1200" y="640" class="pin">3V3 rail → IMU/DAC</text><text x="1200" y="675" class="pin">100 µF + 0.1 µF local</text>
+<!-- wires -->
+<path d="M410 335 H560 V345 H640" class="wire"/><path d="M410 375 H540 V360 H640" class="wire"/><path d="M410 415 H600 V380 H640" class="wire"/>
+<path d="M410 455 H1010 V320 H1120" class="wire"/><path d="M410 495 H1040 V350 H1120" class="wire"/>
+<path d="M410 575 H520 V635 H640" class="wire"/><path d="M410 610 H540 V670 H640" class="wire"/><path d="M410 645 H560 V705 H640" class="wire"/>
+<path d="M410 295 H500 V290 H640" class="power"/><path d="M940 290 H1040 V640 H1120" class="power"/>
+<path d="M410 665 H470 V820 H1050 V720 H1120" class="gnd"/><path d="M940 760 H1050" class="gnd"/>
+<text x="80" y="865" class="note">Design note: keep I²S traces short, route away from the IMU, and place 0.1 µF decoupling at every module.</text>
+<text x="80" y="900" class="note">The PCM5102A is line-level; add a powered amplifier module (e.g. MAX98357A) only when a speaker is required.</text>
+<text x="80" y="935" class="note">Prototype mapping: gyro X/Y → rotation; acceleration energy → expansion/power; simultaneous touch → pinch/shape change; yaw trend → color.</text>
+</svg>

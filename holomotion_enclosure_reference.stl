@@ -1,0 +1,170 @@
+solid holomotion_enclosure
+ facet normal 0 0 -8640
+  outer loop
+   vertex -60 -36 0
+   vertex 60 36 0
+   vertex 60 -36 0
+  endloop
+ endfacet
+ facet normal 0 0 -8640
+  outer loop
+   vertex -60 -36 0
+   vertex -60 36 0
+   vertex 60 36 0
+  endloop
+ endfacet
+ facet normal 0 0 8640
+  outer loop
+   vertex -60 -36 18
+   vertex 60 -36 18
+   vertex 60 36 18
+  endloop
+ endfacet
+ facet normal 0 0 8640
+  outer loop
+   vertex -60 -36 18
+   vertex 60 36 18
+   vertex -60 36 18
+  endloop
+ endfacet
+ facet normal 0 -2160 0
+  outer loop
+   vertex -60 -36 0
+   vertex 60 -36 0
+   vertex 60 -36 18
+  endloop
+ endfacet
+ facet normal 0 -2160 0
+  outer loop
+   vertex -60 -36 0
+   vertex 60 -36 18
+   vertex -60 -36 18
+  endloop
+ endfacet
+ facet normal 1296 0 0
+  outer loop
+   vertex 60 -36 0
+   vertex 60 36 0
+   vertex 60 36 18
+  endloop
+ endfacet
+ facet normal 1296 0 0
+  outer loop
+   vertex 60 -36 0
+   vertex 60 36 18
+   vertex 60 -36 18
+  endloop
+ endfacet
+ facet normal 0 2160 0
+  outer loop
+   vertex 60 36 0
+   vertex -60 36 0
+   vertex -60 36 18
+  endloop
+ endfacet
+ facet normal 0 2160 0
+  outer loop
+   vertex 60 36 0
+   vertex -60 36 18
+   vertex 60 36 18
+  endloop
+ endfacet
+ facet normal -1296 0 0
+  outer loop
+   vertex -60 36 0
+   vertex -60 -36 0
+   vertex -60 -36 18
+  endloop
+ endfacet
+ facet normal -1296 0 0
+  outer loop
+   vertex -60 36 0
+   vertex -60 -36 18
+   vertex -60 36 18
+  endloop
+ endfacet
+ facet normal 0 0 -8640
+  outer loop
+   vertex -60 -36 38
+   vertex 60 36 38
+   vertex 60 -36 38
+  endloop
+ endfacet
+ facet normal 0 0 -8640
+  outer loop
+   vertex -60 -36 38
+   vertex -60 36 38
+   vertex 60 36 38
+  endloop
+ endfacet
+ facet normal 0.0 0.0 8640
+  outer loop
+   vertex -60 -36 40.4
+   vertex 60 -36 40.4
+   vertex 60 36 40.4
+  endloop
+ endfacet
+ facet normal 0.0 0.0 8640
+  outer loop
+   vertex -60 -36 40.4
+   vertex 60 36 40.4
+   vertex -60 36 40.4
+  endloop
+ endfacet
+ facet normal 0.0 -287.99999999999983 0
+  outer loop
+   vertex -60 -36 38
+   vertex 60 -36 38
+   vertex 60 -36 40.4
+  endloop
+ endfacet
+ facet normal 0.0 -287.99999999999983 0
+  outer loop
+   vertex -60 -36 38
+   vertex 60 -36 40.4
+   vertex -60 -36 40.4
+  endloop
+ endfacet
+ facet normal 172.7999999999999 0.0 0
+  outer loop
+   vertex 60 -36 38
+   vertex 60 36 38
+   vertex 60 36 40.4
+  endloop
+ endfacet
+ facet normal 172.7999999999999 0.0 0
+  outer loop
+   vertex 60 -36 38
+   vertex 60 36 40.4
+   vertex 60 -36 40.4
+  endloop
+ endfacet
+ facet normal 0.0 287.99999999999983 0
+  outer loop
+   vertex 60 36 38
+   vertex -60 36 38
+   vertex -60 36 40.4
+  endloop
+ endfacet
+ facet normal 0.0 287.99999999999983 0
+  outer loop
+   vertex 60 36 38
+   vertex -60 36 40.4
+   vertex 60 36 40.4
+  endloop
+ endfacet
+ facet normal -172.7999999999999 0.0 0
+  outer loop
+   vertex -60 36 38
+   vertex -60 -36 38
+   vertex -60 -36 40.4
+  endloop
+ endfacet
+ facet normal -172.7999999999999 0.0 0
+  outer loop
+   vertex -60 36 38
+   vertex -60 -36 40.4
+   vertex -60 36 40.4
+  endloop
+ endfacet
+endsolid holomotion_enclosure

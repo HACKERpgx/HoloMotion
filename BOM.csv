@@ -1,0 +1,14 @@
+Reference,Part,Recommended part/module,Qty,Notes
+U1,MCU,ESP32-S3-DevKitC-1-N8R8,1,Use a module/dev board for prototype; Wi-Fi/BLE available
+U2,IMU,BMI270 breakout or BMI270 shuttle board,1,6-axis accel/gyro; I2C at 3V3
+U3,DAC,PCM5102A I2S DAC breakout,1,Line-level stereo output; 3-wire I2S
+J1,Audio,3.5 mm TRS panel jack,1,Tip L / Ring R / Sleeve GND
+E1,Touch,Thumb copper electrode,1,Approx 15-25 mm exposed pad
+E2,Touch,Index copper electrode,1,Approx 15-25 mm exposed pad
+C1,Capacitor,100 uF low-ESR electrolytic,1,Across 3V3 and GND near DAC
+C2,Capacitor,100 nF ceramic,1,Across 3V3 and GND near DAC
+C3,Capacitor,100 nF ceramic,1,Near BMI270 VDD/VDDIO
+R1,Resistor,4.7 kOhm,1,Optional I2C SDA pull-up if modules omit it
+R2,Resistor,4.7 kOhm,1,Optional I2C SCL pull-up if modules omit it
+SW1,Switch,SPST power switch,1,Series with USB 5V or module 5V input
+M1,Enclosure,3D printed PETG/PLA,1,Parametric model included
