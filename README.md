@@ -1,3 +1,4 @@
+
 # HoloMotion.HTML
 
 Hand-controlled 3D particle system using Three.js and TensorFlow.js.
@@ -13,3 +14,9 @@ Just open `index.html` in a modern browser with webcam access.
 
 
 <img width="1366" height="768" alt="HoloMotion" src="https://github.com/user-attachments/assets/d27b90a5-e6fb-4d74-9349-5212d05ffcda" />
+<img width="981" height="626" alt="img of gesture controller" src="https://github.com/user-attachments/assets/bc694214-5400-4efe-bedf-21dac608bc04" />
+
+
+
+
+
